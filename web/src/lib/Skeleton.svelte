@@ -1,0 +1,33 @@
+<script>
+  export let height = '64px';
+  export let width = '100%';
+  export let radius = 'var(--radius-md)';
+</script>
+
+<div class="skeleton" style="height:{height}; width:{width}; border-radius:{radius}"></div>
+
+<style>
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background: var(--surface-2);
+  }
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.04),
+      transparent
+    );
+    animation: shimmer 1.3s infinite;
+  }
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+</style>
