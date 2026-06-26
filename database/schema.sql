@@ -5,7 +5,7 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 -- ════════════════════════════════════════
 -- USERS
 -- ════════════════════════════════════════
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name            VARCHAR(100) NOT NULL,
     email           VARCHAR(150) UNIQUE NOT NULL,
@@ -18,19 +18,19 @@ CREATE TABLE users (
 -- ════════════════════════════════════════
 -- SKILLS (master list)
 -- ════════════════════════════════════════
-CREATE TABLE skills (
+CREATE TABLE IF NOT EXISTS skills (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name        VARCHAR(100) UNIQUE NOT NULL,
     category    VARCHAR(50),                            -- e.g. Math, Programming
     metadata    JSONB DEFAULT '{}'::JSONB               -- prerequisites, difficulty, tags
 );
 
-CREATE INDEX idx_skills_metadata  ON skills USING GIN (metadata);
+CREATE INDEX IF NOT EXISTS idx_skills_metadata  ON skills USING GIN (metadata);
 
 -- ════════════════════════════════════════
 -- SKILL OFFERINGS (what a user can teach)
 -- ════════════════════════════════════════
-CREATE TABLE skill_offerings (
+CREATE TABLE IF NOT EXISTS skill_offerings (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     skill_id    UUID NOT NULL REFERENCES skills(id) ON DELETE CASCADE,
@@ -42,7 +42,7 @@ CREATE TABLE skill_offerings (
 -- ════════════════════════════════════════
 -- SKILL REQUESTS (what a user wants to learn)
 -- ════════════════════════════════════════
-CREATE TABLE skill_requests (
+CREATE TABLE IF NOT EXISTS skill_requests (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     skill_id    UUID NOT NULL REFERENCES skills(id) ON DELETE CASCADE,
@@ -54,13 +54,13 @@ CREATE TABLE skill_requests (
 -- ════════════════════════════════════════
 -- TRADE CIRCLES (matched loops)
 -- ════════════════════════════════════════
-CREATE TABLE trade_circles (
+CREATE TABLE IF NOT EXISTS trade_circles (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     status      VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active','completed','cancelled')),
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE trade_circle_members (
+CREATE TABLE IF NOT EXISTS trade_circle_members (
     circle_id   UUID REFERENCES trade_circles(id) ON DELETE CASCADE,
     user_id     UUID REFERENCES users(id) ON DELETE CASCADE,
     teaches_skill_id UUID REFERENCES skills(id),
@@ -72,7 +72,7 @@ CREATE TABLE trade_circle_members (
 -- ════════════════════════════════════════
 -- SESSIONS (actual teaching sessions)
 -- ════════════════════════════════════════
-CREATE TABLE sessions (
+CREATE TABLE IF NOT EXISTS sessions (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     circle_id       UUID REFERENCES trade_circles(id) ON DELETE SET NULL,
     teacher_id      UUID NOT NULL REFERENCES users(id),
@@ -88,7 +88,7 @@ CREATE TABLE sessions (
 -- ════════════════════════════════════════
 -- REVIEWS
 -- ════════════════════════════════════════
-CREATE TABLE reviews (
+CREATE TABLE IF NOT EXISTS reviews (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     session_id  UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
     reviewer_id UUID NOT NULL REFERENCES users(id),
@@ -99,7 +99,7 @@ CREATE TABLE reviews (
     UNIQUE (session_id, reviewer_id)
 );
 
-CREATE TABLE friendships (
+CREATE TABLE IF NOT EXISTS friendships (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_one_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     user_two_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -111,10 +111,10 @@ CREATE TABLE friendships (
     UNIQUE (user_one_id, user_two_id)
 );
 
-CREATE INDEX idx_friendships_user_one ON friendships (user_one_id);
-CREATE INDEX idx_friendships_user_two ON friendships (user_two_id);
+CREATE INDEX IF NOT EXISTS idx_friendships_user_one ON friendships (user_one_id);
+CREATE INDEX IF NOT EXISTS idx_friendships_user_two ON friendships (user_two_id);
 
-CREATE TABLE chat_messages (
+CREATE TABLE IF NOT EXISTS chat_messages (
     id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     friendship_id  UUID NOT NULL REFERENCES friendships(id) ON DELETE CASCADE,
     sender_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -122,21 +122,21 @@ CREATE TABLE chat_messages (
     created_at     TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_chat_messages_friendship_created ON chat_messages (friendship_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_friendship_created ON chat_messages (friendship_id, created_at);
 
 -- Realtime: stream chat message inserts to subscribed clients
 ALTER TABLE chat_messages REPLICA IDENTITY FULL;
 -- NOTE: also requires `ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages;`
 -- (handled in migration 20260619030000_realtime_chat.sql)
 
-CREATE TABLE friendship_reads (
+CREATE TABLE IF NOT EXISTS friendship_reads (
     friendship_id  UUID NOT NULL REFERENCES friendships(id) ON DELETE CASCADE,
     user_id        UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     last_read_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (friendship_id, user_id)
 );
 
-CREATE INDEX idx_friendship_reads_user ON friendship_reads (user_id);
+CREATE INDEX IF NOT EXISTS idx_friendship_reads_user ON friendship_reads (user_id);
 
 -- Realtime: notify the sender when the recipient's read marker advances ("seen")
 ALTER TABLE friendship_reads REPLICA IDENTITY FULL;
@@ -146,7 +146,7 @@ ALTER TABLE friendship_reads REPLICA IDENTITY FULL;
 -- ════════════════════════════════════════
 -- MATERIALIZED VIEW — Reputation Scores
 -- ════════════════════════════════════════
-CREATE MATERIALIZED VIEW user_reputation AS
+CREATE MATERIALIZED VIEW IF NOT EXISTS user_reputation AS
 WITH review_stats AS (
     SELECT
         reviewee_id AS user_id,
@@ -172,7 +172,7 @@ FROM users u
 LEFT JOIN review_stats rs ON rs.user_id = u.id
 LEFT JOIN session_stats ss ON ss.user_id = u.id;
 
-CREATE UNIQUE INDEX ON user_reputation (id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_reputation_id ON user_reputation (id);
 
 -- ════════════════════════════════════════
 -- RECURSIVE CTE — Loop Finder (stored as view)
