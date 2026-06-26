@@ -15,5 +15,5 @@ Use this folder as the database source of truth for Supabase GitHub integration.
 5. Verify the app still points to the live database connection in `.env`.
 
 ## Notes
-- The migration enables `pgcrypto`, `vector`, and `pg_trgm`.
+- The migration enables `pgcrypto` and `pg_trgm`.
 - `database/schema.sql` is kept for reference, but the Supabase migration folder is the preferred sync target.

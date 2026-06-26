@@ -1,6 +1,5 @@
 -- Enable required extensions
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
-CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- ════════════════════════════════════════
@@ -23,11 +22,9 @@ CREATE TABLE skills (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name        VARCHAR(100) UNIQUE NOT NULL,
     category    VARCHAR(50),                            -- e.g. Math, Programming
-    embedding   vector(1536),                           -- pgvector semantic embedding
     metadata    JSONB DEFAULT '{}'::JSONB               -- prerequisites, difficulty, tags
 );
 
-CREATE INDEX idx_skills_embedding ON skills USING ivfflat (embedding vector_cosine_ops);
 CREATE INDEX idx_skills_metadata  ON skills USING GIN (metadata);
 
 -- ════════════════════════════════════════
