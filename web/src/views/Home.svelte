@@ -2,15 +2,23 @@
   import { data, loading } from '../lib/data.js';
   import { currentUser } from '../lib/stores.js';
   import { buildMatches, skillName } from '../lib/util.js';
+  import { cardIn, STAGGER } from '../lib/transitions.js';
   import Reveal from '../lib/Reveal.svelte';
   import Skeleton from '../lib/Skeleton.svelte';
   import CycleCard from '../lib/CycleCard.svelte';
   import NearMissCard from '../lib/NearMissCard.svelte';
   import FriendAction from '../lib/FriendAction.svelte';
+  import SkillCard from '../lib/SkillCard.svelte';
 
   $: d = $data;
   $: me = $currentUser;
   $: matches = buildMatches(d, me);
+
+  const category = (id) => d.skills.find((s) => s.id === id)?.category || 'Skill';
+  const rating = (uid) =>
+    d.reputation.find((r) => r.id === uid)?.avg_rating ??
+    d.users.find((u) => u.id === uid)?.reputation_score ??
+    0;
 </script>
 
 <div class="home">
@@ -55,19 +63,21 @@
   <section class="panel">
     <header><h2>Who can teach me</h2><span>Direct matches</span></header>
     {#if $loading}
-      <div class="stack"><Skeleton height="68px" /><Skeleton height="68px" /></div>
+      <div class="grid"><Skeleton height="140px" radius="var(--radius-lg)" /><Skeleton height="140px" radius="var(--radius-lg)" /></div>
     {:else if matches.canTeach.length}
-      <div class="stack">
+      <div class="grid">
         {#each matches.canTeach as item, i (item.id)}
-          <Reveal y={12} delay={i * 35}>
-            <div class="row">
-              <div>
-                <strong>{item.user_name}</strong>
-                <span>Teaches {skillName(d.skills, item.skill_id)} · {item.proficiency}</span>
-              </div>
+          <div in:cardIn={{ delay: i * STAGGER }}>
+            <SkillCard
+              skill={skillName(d.skills, item.skill_id)}
+              category={category(item.skill_id)}
+              userName={item.user_name}
+              rating={rating(item.user_id)}
+              direction="they-teach"
+            >
               <FriendAction userId={item.user_id} />
-            </div>
-          </Reveal>
+            </SkillCard>
+          </div>
         {/each}
       </div>
     {:else}
@@ -78,19 +88,21 @@
   <section class="panel">
     <header><h2>Whom I can teach</h2><span>Potential exchange</span></header>
     {#if $loading}
-      <div class="stack"><Skeleton height="68px" /><Skeleton height="68px" /></div>
+      <div class="grid"><Skeleton height="140px" radius="var(--radius-lg)" /><Skeleton height="140px" radius="var(--radius-lg)" /></div>
     {:else if matches.canLearn.length}
-      <div class="stack">
+      <div class="grid">
         {#each matches.canLearn as item, i (item.id)}
-          <Reveal y={12} delay={i * 35}>
-            <div class="row">
-              <div>
-                <strong>{item.user_name}</strong>
-                <span>Wants {skillName(d.skills, item.skill_id)} · {item.urgency} urgency</span>
-              </div>
+          <div in:cardIn={{ delay: i * STAGGER }}>
+            <SkillCard
+              skill={skillName(d.skills, item.skill_id)}
+              category={category(item.skill_id)}
+              userName={item.user_name}
+              rating={rating(item.user_id)}
+              direction="they-want"
+            >
               <FriendAction userId={item.user_id} />
-            </div>
-          </Reveal>
+            </SkillCard>
+          </div>
         {/each}
       </div>
     {:else}
@@ -129,6 +141,11 @@
   .stack {
     display: flex;
     flex-direction: column;
+    gap: var(--space-3);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: var(--space-3);
   }
   .row {

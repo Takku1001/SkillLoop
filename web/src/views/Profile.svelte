@@ -4,9 +4,12 @@
   import { api } from '../lib/api.js';
   import { toast } from '../lib/toast.js';
   import { skillName } from '../lib/util.js';
+  import { cardIn, STAGGER } from '../lib/transitions.js';
   import Reveal from '../lib/Reveal.svelte';
   import Skeleton from '../lib/Skeleton.svelte';
   import { press } from '../lib/actions/press.js';
+
+  const category = (id) => d.skills.find((s) => s.id === id)?.category || 'Skill';
 
   $: d = $data;
   $: me = $currentUser;
@@ -177,9 +180,13 @@
         </select>
         <button use:press type="submit">Add</button>
       </form>
-      <div class="chips">
-        {#each myOfferings as o}
-          <span class="chip">{skillName(d.skills, o.skill_id)}<em>{o.proficiency}</em></span>
+      <div class="pills">
+        {#each myOfferings as o, i (o.id)}
+          <div class="pill" in:cardIn={{ delay: i * STAGGER }}>
+            <span class="pname">{skillName(d.skills, o.skill_id)}</span>
+            <span class="ptag mono">{category(o.skill_id)}</span>
+            <span class="plevel">{o.proficiency}</span>
+          </div>
         {:else}
           <p class="muted">No skills added yet.</p>
         {/each}
@@ -202,9 +209,13 @@
         </select>
         <button use:press type="submit">Add</button>
       </form>
-      <div class="chips">
-        {#each myRequests as r}
-          <span class="chip want">{skillName(d.skills, r.skill_id)}<em>{r.urgency}</em></span>
+      <div class="pills">
+        {#each myRequests as r, i (r.id)}
+          <div class="pill" in:cardIn={{ delay: i * STAGGER }}>
+            <span class="pname">{skillName(d.skills, r.skill_id)}</span>
+            <span class="ptag mono">{category(r.skill_id)}</span>
+            <span class="plevel want">{r.urgency}</span>
+          </div>
         {:else}
           <p class="muted">No wanted skills yet.</p>
         {/each}
@@ -402,27 +413,60 @@
   .form button:hover {
     background: var(--accent-hover);
   }
-  .chips {
+  .pills {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: var(--space-2);
   }
-  .chip {
-    display: inline-flex;
+  .pill {
+    display: flex;
     align-items: center;
-    gap: var(--space-2);
+    gap: var(--space-3);
     background: var(--surface-2);
-    border: 0.5px solid var(--border);
-    border-radius: var(--radius-full);
-    padding: 0.3rem 0.7rem;
-    font-size: var(--text-sm);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.55rem 0.8rem;
+    transition: border-color var(--dur-1) var(--ease);
   }
-  .chip em {
-    font-style: normal;
+  .pill:hover {
+    border-color: var(--border-strong);
+  }
+  .pname {
+    font-size: var(--text-base);
+    font-weight: var(--fw-medium);
+    color: var(--text-1);
+  }
+  /* category = skill tag: mono teal, fills left-to-right on hover */
+  .ptag {
+    position: relative;
+    overflow: hidden;
     font-size: var(--text-xs);
+    color: var(--success);
+    border: 1px solid var(--success-soft);
+    border-radius: var(--radius-sm);
+    padding: 0.15rem 0.45rem;
+    z-index: 0;
+  }
+  .ptag::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--success-soft);
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform var(--dur-2) var(--ease);
+    z-index: -1;
+  }
+  .ptag:hover::before {
+    transform: scaleX(1);
+  }
+  .plevel {
+    margin-left: auto;
+    font-size: var(--text-xs);
+    text-transform: capitalize;
     color: var(--accent-fg);
   }
-  .chip.want em {
+  .plevel.want {
     color: var(--warning);
   }
   .stack {

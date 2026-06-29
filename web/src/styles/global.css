@@ -80,6 +80,34 @@ textarea {
   border: 0;
 }
 
+/* ──────────────────────────────────────────────────────────────
+   Shared micro-interaction keyframes (referenced by components).
+   Kept global so the CTA shimmer + match pulse-ring aren't duplicated.
+   ────────────────────────────────────────────────────────────── */
+
+/* CTA buttons: a single light sweep across the surface, once per hover. */
+@keyframes shimmer-sweep {
+  from {
+    transform: translateX(-120%) skewX(-12deg);
+  }
+  to {
+    transform: translateX(220%) skewX(-12deg);
+  }
+}
+
+/* Match badge: expanding ring on an avatar — two pulses, then stop. */
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 var(--success-soft);
+  }
+  70% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;

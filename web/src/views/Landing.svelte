@@ -1,6 +1,7 @@
 <script>
   import { createEventDispatcher } from 'svelte';
   import Reveal from '../lib/Reveal.svelte';
+  import Galaxy from '../lib/Galaxy.svelte';
   import { press } from '../lib/actions/press.js';
 
   const dispatch = createEventDispatcher();
@@ -25,6 +26,20 @@
 </script>
 
 <section class="landing">
+  <div class="galaxy-bg" aria-hidden="true">
+    <Galaxy
+      density={0.9}
+      hueShift={250}
+      saturation={0.25}
+      glowIntensity={0.22}
+      twinkleIntensity={0.5}
+      starSpeed={0.2}
+      speed={0.7}
+      rotationSpeed={0.03}
+      mouseInteraction={false}
+      mouseRepulsion={false}
+    />
+  </div>
   <div class="glow" aria-hidden="true"></div>
 
   <Reveal y={14} delay={40} damping={0.7}>
@@ -90,9 +105,27 @@
     margin: 0 auto;
   }
 
+  /* Full-bleed animated starfield background (React Bits "Galaxy", ported). */
+  .galaxy-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.85;
+    /* Fade the field toward the edges so it reads as ambience, not noise. */
+    -webkit-mask-image: radial-gradient(120% 90% at 50% 38%, #000 35%, transparent 100%);
+    mask-image: radial-gradient(120% 90% at 50% 38%, #000 35%, transparent 100%);
+  }
+
+  /* Lift every real content layer above the starfield + glow. */
+  .landing > :not(.galaxy-bg):not(.glow) {
+    position: relative;
+    z-index: 2;
+  }
+
   .glow {
-    position: absolute;
-    top: -10%;
+    position: fixed;
+    top: -8%;
     left: 50%;
     transform: translateX(-50%);
     width: 620px;
@@ -100,7 +133,8 @@
     max-width: 120vw;
     background: radial-gradient(circle, var(--accent-soft) 0%, transparent 62%);
     pointer-events: none;
-    opacity: 0.7;
+    opacity: 0.5;
+    z-index: 1;
   }
 
   .wordmark {
@@ -205,11 +239,28 @@
     box-shadow: var(--ring);
   }
   .btn-primary {
+    position: relative;
+    overflow: hidden;
     background: var(--accent);
     color: #fff;
   }
   .btn-primary:hover {
     background: var(--accent-hover);
+  }
+  /* subtle shimmer sweep, once per hover */
+  .btn-primary::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 45%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+    transform: translateX(-120%) skewX(-12deg);
+    pointer-events: none;
+  }
+  .btn-primary:hover::after {
+    animation: shimmer-sweep 0.7s var(--ease) 1;
   }
   .btn-ghost {
     background: transparent;

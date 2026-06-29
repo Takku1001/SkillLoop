@@ -182,6 +182,8 @@
     padding: var(--space-2) var(--space-3);
   }
   .submit {
+    position: relative;
+    overflow: hidden;
     height: 42px;
     margin-top: var(--space-1);
     background: var(--accent);
@@ -194,6 +196,20 @@
   }
   .submit:hover:not(:disabled) {
     background: var(--accent-hover);
+  }
+  .submit::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 45%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+    transform: translateX(-120%) skewX(-12deg);
+    pointer-events: none;
+  }
+  .submit:hover:not(:disabled)::after {
+    animation: shimmer-sweep 0.7s var(--ease) 1;
   }
   .submit:disabled {
     opacity: 0.7;

@@ -3,6 +3,7 @@
   import { currentUser } from './stores.js';
   import { userById, skillName } from './util.js';
   import FriendAction from './FriendAction.svelte';
+  import LoopRing from './LoopRing.svelte';
 
   export let loop;
 
@@ -10,53 +11,75 @@
   $: me = $currentUser;
   $: rawPath = Array.isArray(loop.path) ? loop.path.slice(0, -1) : [];
   $: names = rawPath.map((id) => userById(d.users, id)?.name || 'Unknown');
+  $: meIndex = rawPath.findIndex((id) => id === me?.id);
   $: others = rawPath.filter((id) => id !== me?.id);
   // Score typically lands in ~0–6; normalize for the bar.
   $: scorePct = Math.max(6, Math.min(100, ((Number(loop.score) || 0) / 6) * 100));
 </script>
 
 <div class="cycle">
-  <div class="head">
-    <span class="path">
-      {#each names as n, i}
-        <span class="node">{n}</span>{#if i < names.length - 1}<span class="arrow">→</span>{/if}
-      {/each}
-    </span>
-    {#if loop.score != null}
-      <span class="score mono">{loop.score}</span>
-    {/if}
-  </div>
+  <div class="layout">
+    <LoopRing {names} highlight={meIndex} />
 
-  {#if loop.score != null}
-    <div class="bar"><div class="fill" style="width:{scorePct}%"></div></div>
-  {/if}
+    <div class="details">
+      <div class="head">
+        <span class="path">
+          {#each names as n, i}
+            <span class="node">{n}</span>{#if i < names.length - 1}<span class="arrow">→</span>{/if}
+          {/each}
+        </span>
+        {#if loop.score != null}
+          <span class="score mono">{loop.score}</span>
+        {/if}
+      </div>
 
-  <div class="meta">
-    <span class="chip"><i class="i star"></i>Reputation <b class="mono">{loop.avg_reputation ?? '—'}</b></span>
-    <span class="chip">Urgency <b class="mono">{loop.avg_urgency ?? '—'}</b></span>
-    <span class="chip">Proficiency <b class="mono">{loop.avg_proficiency ?? '—'}</b></span>
-    <span class="chip">Depth <b class="mono">{loop.depth}</b></span>
-  </div>
+      {#if loop.score != null}
+        <div class="bar"><div class="fill" style="width:{scorePct}%"></div></div>
+      {/if}
 
-  {#if others.length}
-    <div class="actions">
-      {#each others as id}
-        <FriendAction userId={id} />
-      {/each}
+      <div class="meta">
+        <span class="chip"><i class="i star"></i>Reputation <b class="mono">{loop.avg_reputation ?? '—'}</b></span>
+        <span class="chip">Urgency <b class="mono">{loop.avg_urgency ?? '—'}</b></span>
+        <span class="chip">Proficiency <b class="mono">{loop.avg_proficiency ?? '—'}</b></span>
+        <span class="chip">Depth <b class="mono">{loop.depth}</b></span>
+      </div>
+
+      {#if others.length}
+        <div class="actions">
+          {#each others as id}
+            <FriendAction userId={id} />
+          {/each}
+        </div>
+      {/if}
     </div>
-  {/if}
+  </div>
 </div>
 
 <style>
   .cycle {
     background: var(--surface-1);
-    border: 0.5px solid var(--border);
+    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: var(--space-4);
     transition: border-color var(--dur-2) var(--ease);
   }
   .cycle:hover {
-    border-color: var(--border-strong);
+    border-color: var(--accent);
+  }
+  .layout {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+  }
+  .details {
+    flex: 1;
+    min-width: 0;
+  }
+  @media (max-width: 540px) {
+    .layout {
+      flex-direction: column;
+      align-items: stretch;
+    }
   }
   .head {
     display: flex;

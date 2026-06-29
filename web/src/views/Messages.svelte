@@ -10,8 +10,7 @@
     sendMessage,
     sendTyping,
   } from '../lib/chat.js';
-  import { fly } from 'svelte/transition';
-  import { backOut } from 'svelte/easing';
+  import { chatMessage } from '../lib/transitions.js';
   import { tick } from 'svelte';
 
   let draft = '';
@@ -123,11 +122,13 @@
         {/if}
         {#each $messages as m, i (m.id)}
           {@const mine = m.sender_id === me?.id}
+          {@const firstOfBlock = i === 0 || $messages[i - 1].sender_id !== m.sender_id}
           <div
             class="bubble {mine ? 'mine' : 'theirs'}"
-            in:fly={{ y: 8, duration: 280, easing: backOut }}
+            class:block-start={firstOfBlock}
+            in:chatMessage
           >
-            {#if !mine}<span class="who">{m.sender_name}</span>{/if}
+            {#if !mine && firstOfBlock}<span class="who">{m.sender_name}</span>{/if}
             <span class="body">{@html linkify(m.body)}</span>
             <span class="time">{new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             {#if mine && i === lastMineIdx}
@@ -137,7 +138,7 @@
         {/each}
 
         {#if $typingName}
-          <div class="bubble theirs typing" in:fly={{ y: 6, duration: 200 }}>
+          <div class="bubble theirs typing block-start" in:chatMessage>
             <span class="dots"><i></i><i></i><i></i></span>
             <span class="who-typing">{$typingName} is typing</span>
           </div>
@@ -296,7 +297,11 @@
     padding: var(--space-5);
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: 3px;
+  }
+  /* extra breathing room between sender blocks */
+  .bubble.block-start:not(:first-child) {
+    margin-top: var(--space-4);
   }
   .bubble {
     max-width: 76%;
@@ -378,24 +383,25 @@
     display: flex;
     gap: var(--space-2);
     padding: var(--space-3) var(--space-4);
-    border-top: 0.5px solid var(--border);
+    border-top: 1px solid var(--border);
   }
   .composer input {
     flex: 1;
     height: 42px;
     padding: 0 var(--space-3);
     background: var(--surface-2);
-    border: 0.5px solid var(--border-strong);
+    border: 1px solid transparent; /* borderless until focus */
     border-radius: var(--radius-md);
     color: var(--text-1);
     font-size: var(--text-base);
-    transition: border-color var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease);
+    transition: border-color var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease), background var(--dur-1) var(--ease);
   }
   .composer input::placeholder {
     color: var(--text-3);
   }
   .composer input:focus {
     outline: none;
+    background: var(--surface-1);
     border-color: var(--accent);
     box-shadow: var(--ring);
   }
